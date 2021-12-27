@@ -57,6 +57,13 @@
 			</exclusions>
 		</dependency>
 
+		<!-- JSON Web Token -->
+		<dependency>
+			<groupId>io.jsonwebtoken</groupId>
+			<artifactId>jjwt</artifactId>
+			<version>0.9.1</version>
+		</dependency>
+
 		<!-- Lombok -->
 		<dependency>
 			<groupId>org.projectlombok</groupId>
@@ -67,7 +74,7 @@
 		<dependency>
 			<groupId>org.joinfaces</groupId>
 			<artifactId>tomcat-spring-boot-starter</artifactId>
-			<scope>provided</scope>
+			<!--<scope>provided</scope>-->
 		</dependency>
 		<dependency>
 			<groupId>org.joinfaces</groupId>

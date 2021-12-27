@@ -1,0 +1,1 @@
+INSERT INTO USERS (email, password, name, online) VALUES (?, ?, ?, ?)

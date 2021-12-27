@@ -1,15 +1,33 @@
 package backend.configuration;
 
+import backend.constants.Constants;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.flywaydb.core.internal.util.FileCopyUtils;
+import org.springframework.beans.factory.InitializingBean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ResourceLoader;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.util.Assert;
 
+import javax.sql.DataSource;
+import java.io.IOException;
+import java.io.InputStreamReader;
+import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
+import java.util.Random;
+import java.util.UUID;
+
+@Slf4j
 @Configuration
 @RequiredArgsConstructor
-public class DbConfiguration /*implements InitializingBean*/ {
+public class DbConfiguration implements InitializingBean {
 
-	/*private final DataSource dataSource;
+    private final DataSource dataSource;
 	private final ResourceLoader resourceLoader;
+
 	private final PasswordEncoder encoder;
+
 
 	private String getQuery(final String name) throws IOException {
 		final var resource = resourceLoader.getResource("classpath:/db/queries/" + name + ".sql");
@@ -20,61 +38,95 @@ public class DbConfiguration /*implements InitializingBean*/ {
 
 	@Override
 	public void afterPropertiesSet() throws Exception {
-		final var query = getQuery("count_admins");
-		try (
-				final var connection = dataSource.getConnection();
-				final var statement = connection.prepareStatement(query);
-		) {
-			final var rs = statement.executeQuery();
-			Assert.isTrue(rs.next(), "Unable to count users!");
+        try (final var connection = dataSource.getConnection()) {
+            if (!hasRoles(connection)) {
+                createRoles(connection);
+            }
 
-			final var count = rs.getLong(1);
-			if (count < 1) {
-				createDefaultAdminUser(connection);
-			}
-		}
+            if (!hasAdmin(connection)) {
+                createAdmin(connection);
+            }
+        }
 	}
 
-	private void createDefaultAdminUser(Connection connection) throws Exception {
-		final var createUserQuery = getQuery("create_user");
-		final var createRoleQuery = getQuery("create_role");
-		final var assignRoleQuery = getQuery("assign_role");
-		try (
-				final var createUserStatement = connection.prepareStatement(createUserQuery);
-				final var createRoleStatement = connection.prepareStatement(createRoleQuery);
-				final var assignRoleStatement = connection.prepareStatement(assignRoleQuery);
-		) {
-			connection.setAutoCommit(false);
+    private boolean hasAdmin(Connection connection) throws Exception {
+        final var query = getQuery("count_admins");
+        final var statement = connection.prepareStatement(query);
+        final var rs = statement.executeQuery();
 
-			final var userId = UUID.randomUUID().toString();
-			final var passwordHash = encoder.encode("super secret");
-			createUserStatement.setString(1, userId);
-			createUserStatement.setString(2, "admin");
-			createUserStatement.setString(3, passwordHash);
-			createUserStatement.execute();
+        Assert.isTrue(rs.next(), "Unable to count users!");
 
-			final var adminRoleId = UUID.randomUUID().toString();
-			createRoleStatement.setString(1, adminRoleId);
-			createRoleStatement.setString(2, "ADMIN");
-			createRoleStatement.execute();
+        final var count = rs.getLong(1);
+        if (count < 1) {
+            return false;
+        }
+        else {
+            return true;
+        }
+    }
 
-			final var userRoleId = UUID.randomUUID().toString();
-			createRoleStatement.setString(1, userRoleId);
-			createRoleStatement.setString(2, "USER");
-			createRoleStatement.execute();
+    private boolean hasRoles(Connection connection) throws Exception {
+        final var query = getQuery("count_roles");
+        final var statement = connection.prepareStatement(query);
+        final var rs = statement.executeQuery();
 
-			assignRoleStatement.setString(1, userId);
-			assignRoleStatement.setString(2, adminRoleId);
-			assignRoleStatement.execute();
-			assignRoleStatement.setString(2, userRoleId);
-			assignRoleStatement.execute();
+        Assert.isTrue(rs.next(), "Unable to count roles!");
 
-			connection.commit();
-		}
-		catch (Exception e) {
-			connection.rollback();
-			throw e;
-		}
-	}*/
+        final var count = rs.getLong(1);
+        if (count < 2) {
+            return false;
+        }
+        else {
+            return true;
+        }
 
+    }
+
+    private void createRoles(Connection connection) throws Exception {
+        final var createRoleQuery1 = getQuery("create_role");
+        final var statement1 = connection.prepareStatement(createRoleQuery1);
+        statement1.setString(1, Constants.ADMIN_ROLE_NAME);
+        statement1.execute();
+
+        final var createRoleQuery2 = getQuery("create_role");
+        final var statement2 = connection.prepareStatement(createRoleQuery2);
+        statement2.setString(1, Constants.USER_ROLE_NAME);
+        statement2.execute();
+    }
+
+    private void createAdmin(Connection connection) throws Exception {
+        final var createUserQuery = getQuery("create_user");
+        final var createUserStatement = connection.prepareStatement(createUserQuery);
+        final var email = "admin@admin.admin";
+        final var passwordPlain = generateAdminPassword();
+        final var passwordHash = encoder.encode(passwordPlain);
+
+        log.info("ADMIN EMAIL: " + email);
+        log.info("ADMIN PASSWORD: " + passwordPlain);
+
+        createUserStatement.setString(1, email);
+        createUserStatement.setString(2, passwordHash);
+        createUserStatement.setString(3, "admin");
+        createUserStatement.setBoolean(4, false);
+        createUserStatement.execute();
+
+        final var assignRoleQuery = getQuery("assign_role");
+        final var assignRoleStatement = connection.prepareStatement(assignRoleQuery);
+        assignRoleStatement.setString(1, email);
+        assignRoleStatement.setString(2, Constants.ADMIN_ROLE_NAME);
+        assignRoleStatement.execute();
+    }
+
+    private String generateAdminPassword() {
+        int leftLimit = 48; // numeral '0'
+        int rightLimit = 122; // letter 'z'
+        int targetStringLength = 10;
+        Random random = new Random();
+
+        return random.ints(leftLimit, rightLimit + 1)
+                .filter(i -> (i <= 57 || i >= 65) && (i <= 90 || i >= 97))
+                .limit(targetStringLength)
+                .collect(StringBuilder::new, StringBuilder::appendCodePoint, StringBuilder::append)
+                .toString();
+    }
 }

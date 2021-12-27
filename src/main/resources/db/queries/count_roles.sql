@@ -1,0 +1,1 @@
+SELECT count(r.name) AS count FROM ROLES r;

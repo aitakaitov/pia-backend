@@ -1,0 +1,1 @@
+INSERT INTO USER_ROLE (user_email, role_id) SELECT ?, r.id FROM ROLES r WHERE r.name = ?;
