@@ -1,0 +1,43 @@
+<ui:composition xmlns="http://www.w3.org/1999/xhtml"
+	xmlns:f="http://xmlns.jcp.org/jsf/core"
+	xmlns:h="http://xmlns.jcp.org/jsf/html"
+	xmlns:ui="http://xmlns.jcp.org/jsf/facelets"
+	xmlns:sec="https://joinfaces.org/security"
+	
+	template="/WEB-INF/jsf/base.xhtml"
+	lang="cs">
+
+	<ui:define name="title">Login</ui:define>
+	
+	<ui:define name="body">
+		<div class="container">
+			<h1>Login</h1>
+			<form action="/login" method="POST">
+				<div class="form row">
+					<input type="text" class="form-control" name="username" placeholder="user" tabindex="1" />
+				</div>
+				<div class="form row">
+					<input type="password" class="form-control" name="password" placeholder="password" tabindex="1" />
+					<input type="hidden" name="#{_csrf.parameterName}" value="#{_csrf.token}"/>
+				</div>
+				<ui:repeat var="authMethod" value="#{userDetailsServiceProvider.services.keySet()}">
+					<div class="form-check">
+						<label class="form-check-label">
+							<f:subview id="nic" rendered="#{authMethodProvider.authMethod == authMethod}">
+								<input class="form-check-input" name="authMethod" type="radio" value="#{authMethod}" checked="checked" />
+							</f:subview>
+							<f:subview id="nic" rendered="#{authMethodProvider.authMethod != authMethod}">
+								<input class="form-check-input" name="authMethod" type="radio" value="#{authMethod}" />
+							</f:subview>
+							#{authMethod}
+						</label>
+					</div>
+				</ui:repeat>
+				<div class="form row">
+					<button type="submit" class="btn btn-primary" tabindex="1">Log In</button>
+				</div>
+			</form>
+		</div>
+	</ui:define>
+	
+</ui:composition>
