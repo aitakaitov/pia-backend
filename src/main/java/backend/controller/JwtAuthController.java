@@ -5,6 +5,7 @@ import backend.auth.JwtResponse;
 import backend.auth.JwtTokenUtil;
 import backend.auth.JwtUserDetailsService;
 
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -12,19 +13,19 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
 @RestController
 @CrossOrigin
+@Slf4j
 public class JwtAuthController {
-
-    @Autowired
-    private Map<String, String> emailTokenMap;
 
     @Autowired
     private AuthenticationManager authenticationManager;
@@ -46,16 +47,7 @@ public class JwtAuthController {
         final UserDetails userDetails = userDetailsService
                 .loadUserByUsername(username);
 
-        // We check if the user already has token registered and if yes, we don't issue another one
-        if (emailTokenMap.containsKey(username)) {
-            if (jwtTokenUtil.validateToken(emailTokenMap.get(username), userDetails)) {
-                return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
-            }
-        }
-
         final String token = jwtTokenUtil.generateToken(userDetails);
-
-        emailTokenMap.put(userDetails.getUsername(), token);
 
         return ResponseEntity.ok(new JwtResponse(token));
     }
@@ -80,12 +72,13 @@ public class JwtAuthController {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
 
+        log.info("TEST ---- "  + SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
+
         String token = jwtTokenUtil.getTokenFromHeader(authHeader);
         String username = jwtTokenUtil.getUsernameFromToken(token);
 
         // Generate new token and update it
-        String newToken = jwtTokenUtil.generateToken(User.builder().username(username).build());
-        emailTokenMap.put(username, newToken);
+        String newToken = jwtTokenUtil.generateToken(User.builder().username(username).password("").authorities(Collections.emptySet()).build());
 
         return ResponseEntity.ok(new JwtResponse(newToken));
     }
