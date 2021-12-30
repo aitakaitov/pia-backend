@@ -36,7 +36,7 @@ public class JwtAuthController {
     @Autowired
     private JwtUserDetailsService userDetailsService;
 
-    @RequestMapping(value = "/auth/authenticate", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/auth/authentication", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest) throws Exception {
 
         String username = authenticationRequest.getUsername();
@@ -62,7 +62,7 @@ public class JwtAuthController {
         }
     }
 
-    @RequestMapping(value = "/auth/refresh", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/auth/refresh", method = RequestMethod.GET)
     public ResponseEntity<?> refreshAuthenticationToken(@RequestHeader(name = "Authorization") String authHeader) throws Exception {
 
         // Here we are already authenticated, since only /auth/authenticate is excluded from the process
@@ -71,8 +71,6 @@ public class JwtAuthController {
         if (authHeader == null || authHeader.length() == 0) {
             return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
         }
-
-        log.info("TEST ---- "  + SecurityContextHolder.getContext().getAuthentication().getAuthorities().toString());
 
         String token = jwtTokenUtil.getTokenFromHeader(authHeader);
         String username = jwtTokenUtil.getUsernameFromToken(token);

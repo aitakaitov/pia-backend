@@ -3,8 +3,7 @@ package backend.model.entity;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.Collections;
-import java.util.Set;
+import java.util.*;
 
 @Entity
 @Table(name = "USERS")
@@ -24,7 +23,7 @@ public class UserEntity {
 	@Column(nullable = false, name = "online")
 	private boolean online;
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "USER_ROLE",
 			joinColumns = {
@@ -34,9 +33,9 @@ public class UserEntity {
 					@JoinColumn(name = "role_id")
 			}
 	)
-	private Set<RoleEntity> roles = Collections.emptySet();
+	private Set<RoleEntity> roles = new HashSet<>();
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "USER_BLOCKED",
 			joinColumns = {
@@ -46,9 +45,9 @@ public class UserEntity {
 					@JoinColumn(name = "user_blocked")
 			}
 	)
-	private Set<UserEntity> blocked = Collections.emptySet();
+	private Set<UserEntity> blocked = new HashSet<>();
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "USER_REQUEST",
 			joinColumns = {
@@ -58,9 +57,9 @@ public class UserEntity {
 					@JoinColumn(name = "user_to")
 			}
 	)
-	private Set<UserEntity> requests = Collections.emptySet();
+	private Set<UserEntity> requests = new HashSet<>();
 
-	@ManyToMany(fetch = FetchType.LAZY)
+	@ManyToMany(fetch = FetchType.EAGER)
 	@JoinTable(
 			name = "USER_FRIEND",
 			joinColumns = {
@@ -70,8 +69,5 @@ public class UserEntity {
 					@JoinColumn(name = "user_to")
 			}
 	)
-	private Set<UserEntity> friends = Collections.emptySet();
-
-	/*@OneToMany(mappedBy = "user_email")
-	private Set<PostEntity> posts;*/
+	private Set<UserEntity> friends = new HashSet<>();
 }

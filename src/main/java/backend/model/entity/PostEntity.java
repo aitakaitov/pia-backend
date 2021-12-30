@@ -3,9 +3,7 @@ package backend.model.entity;
 import lombok.Data;
 
 import javax.persistence.*;
-import java.util.Collections;
-import java.util.Set;
-import java.util.UUID;
+import java.util.*;
 import java.sql.Time;
 
 @Entity
@@ -25,7 +23,7 @@ public class PostEntity {
     @Column(nullable = false, name = "text")
     private String text;
 
-    @ManyToMany(fetch = FetchType.LAZY)
+    @ManyToMany(fetch = FetchType.EAGER)
     @JoinTable(
             name = "POST_TYPE",
             joinColumns = {
@@ -35,7 +33,7 @@ public class PostEntity {
                     @JoinColumn(name = "type_id")
             }
     )
-    private Set<TypeEntity> types = Collections.emptySet();
+    private Set<TypeEntity> types = new HashSet<>();
 
     /*@ManyToOne
     @JoinColumn(name = "email")
