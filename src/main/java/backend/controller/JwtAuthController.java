@@ -1,7 +1,7 @@
 package backend.controller;
 
-import backend.auth.JwtRequest;
-import backend.auth.JwtResponse;
+import backend.auth.requests.JwtRequest;
+import backend.auth.responses.JwtResponse;
 import backend.auth.JwtTokenUtil;
 import backend.auth.JwtUserDetailsService;
 
@@ -13,14 +13,11 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
-import java.util.HashMap;
-import java.util.Map;
 
 @RestController
 @CrossOrigin

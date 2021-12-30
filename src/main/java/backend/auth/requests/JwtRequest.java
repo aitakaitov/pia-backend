@@ -1,4 +1,4 @@
-package backend.auth;
+package backend.auth.requests;
 
 import java.io.Serializable;
 

@@ -1,6 +1,7 @@
 package backend.controller;
 
-import backend.auth.RegistrationRequest;
+import backend.auth.requests.EmailAvailableRequest;
+import backend.auth.requests.RegistrationRequest;
 import backend.model.UserFactory;
 import backend.model.entity.RoleEntity;
 import backend.model.repo.RoleRepository;
@@ -15,7 +16,6 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
 
-import javax.persistence.EntityManager;
 import java.util.*;
 import java.util.regex.Pattern;
 
@@ -33,7 +33,18 @@ public class RegistrationController {
     // Email regex pattern compliant with RFC 5322
     private final Pattern EMAIL_PATTERN = Pattern.compile("(?:[a-z0-9!#$%&'*+/=?^_`{|}~-]+(?:\\.[a-z0-9!#$%&'*+/=?^_`{|}~-]+)*|\"(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21\\x23-\\x5b\\x5d-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])*\")@(?:(?:[a-z0-9](?:[a-z0-9-]*[a-z0-9])?\\.)+[a-z0-9](?:[a-z0-9-]*[a-z0-9])?|\\[(?:(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9]))\\.){3}(?:(2(5[0-5]|[0-4][0-9])|1[0-9][0-9]|[1-9]?[0-9])|[a-z0-9-]*[a-z0-9]:(?:[\\x01-\\x08\\x0b\\x0c\\x0e-\\x1f\\x21-\\x5a\\x53-\\x7f]|\\\\[\\x01-\\x09\\x0b\\x0c\\x0e-\\x7f])+)\\])");
 
-    @RequestMapping(value = "/api/auth/registration", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/auth/email/available", method = RequestMethod.POST)
+    public ResponseEntity<?> checkEmailAvailable(@RequestBody EmailAvailableRequest emailAvailableRequest) throws Exception {
+        if (emailAvailable(emailAvailableRequest.getEmail())) {
+            return new ResponseEntity<>(HttpStatus.OK);
+        }
+        else {
+            return new ResponseEntity<>(HttpStatus.CONFLICT);
+        }
+    }
+
+
+        @RequestMapping(value = "/api/auth/registration", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody RegistrationRequest registrationRequest) throws Exception {
         if (!isValidMail(registrationRequest.getEmail())) {
             // Return 400 on invalid mail

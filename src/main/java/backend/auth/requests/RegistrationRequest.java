@@ -1,4 +1,4 @@
-package backend.auth;
+package backend.auth.requests;
 
 public class RegistrationRequest {
     private static final long serialVersionUID = 5926468583005150706L;

@@ -5,6 +5,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
@@ -46,6 +47,8 @@ public class JwtRequestFilter extends OncePerRequestFilter {
                 log.info("Unable to get JWT Token");
             } catch (ExpiredJwtException e) {
                 log.info("JWT Token has expired");
+            } catch (MalformedJwtException e) {
+                log.info("Received malformed JWT token");
             }
         } else {
             log.warn("JWT Token does not begin with Bearer String");
@@ -53,8 +56,6 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
         // validate the token
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
-
-            // TODO Possible try-catch for UserNotFoundException?
             UserDetails userDetails = this.jwtUserDetailsService.loadUserByUsername(username);
 
             // Validate the token
