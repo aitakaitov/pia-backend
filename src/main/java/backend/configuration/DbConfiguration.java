@@ -46,40 +46,37 @@ public class DbConfiguration implements InitializingBean {
             if (!hasAdmin(connection)) {
                 createAdmin(connection);
             }
+
+            if (!hasPostTypes(connection)) {
+                createPostTypes(connection);
+            }
         }
 	}
 
     private boolean hasAdmin(Connection connection) throws Exception {
-        final var query = getQuery("count_admins");
-        final var statement = connection.prepareStatement(query);
-        final var rs = statement.executeQuery();
-
-        Assert.isTrue(rs.next(), "Unable to count users!");
-
-        final var count = rs.getLong(1);
-        if (count < 1) {
-            return false;
-        }
-        else {
-            return true;
-        }
+        long count = getCount(connection, "count_admins");
+        return count >= 1;
     }
 
     private boolean hasRoles(Connection connection) throws Exception {
-        final var query = getQuery("count_roles");
+        long count = getCount(connection, "count_roles");
+        return count >= 2;
+
+    }
+
+    private boolean hasPostTypes(Connection connection) throws Exception {
+        long count = getCount(connection, "count_post_types");
+        return count >= 2;
+    }
+
+    private long getCount(Connection connection, String queryName) throws Exception {
+        final var query = getQuery(queryName);
         final var statement = connection.prepareStatement(query);
         final var rs = statement.executeQuery();
 
-        Assert.isTrue(rs.next(), "Unable to count roles!");
+        Assert.isTrue(rs.next(), "Unable to execute query " + queryName + "!");
 
-        final var count = rs.getLong(1);
-        if (count < 2) {
-            return false;
-        }
-        else {
-            return true;
-        }
-
+        return rs.getLong(1);
     }
 
     private void createRoles(Connection connection) throws Exception {
@@ -91,6 +88,18 @@ public class DbConfiguration implements InitializingBean {
         final var createRoleQuery2 = getQuery("create_role");
         final var statement2 = connection.prepareStatement(createRoleQuery2);
         statement2.setString(1, Constants.USER_ROLE_NAME);
+        statement2.execute();
+    }
+
+    private void createPostTypes(Connection connection) throws Exception {
+        final var createTypeRegular = getQuery("create_type");
+        final var statement1 = connection.prepareStatement(createTypeRegular);
+        statement1.setString(1, Constants.REGULAR_TYPE_NAME);
+        statement1.execute();
+
+        final var createTypeAnnouncement = getQuery("create_type");
+        final var statement2 = connection.prepareStatement(createTypeAnnouncement);
+        statement2.setString(1, Constants.ANNOUNCEMENT_TYPE_NAME);
         statement2.execute();
     }
 
