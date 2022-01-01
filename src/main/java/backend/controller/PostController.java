@@ -16,11 +16,14 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RequestMethod;
 import org.springframework.web.bind.annotation.RestController;
+import springfox.documentation.spi.service.contexts.SecurityContext;
 
 import javax.servlet.ServletContext;
 import java.util.HashSet;
@@ -64,13 +67,53 @@ public class PostController {
     }
 
     @RequestMapping(value = "/api/posts/new", method = RequestMethod.GET)
-    public ResponseEntity<?> getNewPosts(@RequestBody CreatePostRequest createPostRequest) throws Exception {
+    public ResponseEntity<?> getNewPosts() throws Exception {
         return null;
     }
 
     @RequestMapping(value = "/api/posts/old", method = RequestMethod.GET)
     public ResponseEntity<?> getOlderPosts(@RequestBody CreatePostRequest createPostRequest) throws Exception {
         return null;
+    }
+
+    @RequestMapping(value = "/api/announcement", method = RequestMethod.POST)
+    public ResponseEntity<?> createAnnouncement(@RequestBody CreatePostRequest createAnnouncementRequest) throws Exception {
+        String userEmail = (String)servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
+        String postText = createAnnouncementRequest.getPostText();
+
+        var authorities = SecurityContextHolder.getContext().getAuthentication().getAuthorities();
+        boolean isAdmin = false;
+        for (var sga : authorities) {
+            if (sga instanceof SimpleGrantedAuthority) {
+                if (((SimpleGrantedAuthority) sga).getAuthority().equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
+                    isAdmin = true;
+                }
+            }
+        }
+
+        if (!isAdmin) {
+            log.info("Attempted access to announcement endpoint of non-admin user");
+            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+        }
+
+        // posts cannot be empty
+        if (postText.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        }
+
+        PostEntity post = PostFactory.createPost(postText, userEmail);
+
+        var typeOptional = typeRepository.getTypeByName(Constants.ANNOUNCEMENT_TYPE_NAME);
+        if (typeOptional.isEmpty()) {
+            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+        }
+
+        Set<TypeEntity> types = new HashSet<>();
+        types.add(typeOptional.get());
+        post.setTypes(types);
+        postRepository.save(post);
+
+        return new ResponseEntity<>(HttpStatus.OK);
     }
 
 }
