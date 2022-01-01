@@ -5,6 +5,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import backend.constants.Constants;
 import io.jsonwebtoken.MalformedJwtException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -69,6 +70,7 @@ public class JwtRequestFilter extends OncePerRequestFilter {
 
                 // Specify the current user is authenticated in the session
                 SecurityContextHolder.getContext().setAuthentication(usernamePasswordAuthenticationToken);
+                getServletContext().setAttribute(Constants.SCONTEXT_USER_EMAIL_KEY, userDetails.getUsername());
             }
         }
         chain.doFilter(request, response);
