@@ -10,9 +10,13 @@ import org.springframework.stereotype.Repository;
 
 import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 
 @Repository
 public interface UserRepository extends CrudRepository<UserEntity, String> {
 
 	Optional<UserEntity> findByEmail(String email);
+
+	@Query("SELECT u FROM UserEntity u JOIN u.requests WHERE u.user_to = :email")
+	Set<UserEntity> getRequestsToUser(String email);
 }
