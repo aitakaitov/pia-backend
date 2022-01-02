@@ -5,6 +5,8 @@ import backend.auth.responses.JwtResponse;
 import backend.auth.JwtTokenUtil;
 import backend.auth.JwtUserDetailsService;
 
+import backend.auth.responses.UserRole;
+import backend.constants.Constants;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -13,6 +15,8 @@ import org.springframework.security.authentication.AuthenticationManager;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.authentication.UsernamePasswordAuthenticationToken;
+import org.springframework.security.core.authority.SimpleGrantedAuthority;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
@@ -46,7 +50,13 @@ public class JwtAuthController {
 
         final String token = jwtTokenUtil.generateToken(userDetails);
 
-        return ResponseEntity.ok(new JwtResponse(token));
+        String role = getRole();
+        if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
+            return ResponseEntity.ok(new JwtResponse(token, UserRole.ADMIN));
+        }
+        else {
+            return ResponseEntity.ok(new JwtResponse(token, UserRole.USER));
+        }
     }
 
     private void authenticate(String username, String password) throws Exception {
@@ -59,6 +69,20 @@ public class JwtAuthController {
         }
     }
 
+    private String getRole() {
+        // This is a bit weird, but we know only one authority is granted to a user right now
+        // and that it is a SimpleGrantedAuthority, so we can do this. If there were more authorities, we would have to
+        // do it another way
+        String role = "";
+        for (var sga : SecurityContextHolder.getContext().getAuthentication().getAuthorities()) {
+            if (sga instanceof SimpleGrantedAuthority) {
+                role = sga.getAuthority();
+            }
+        }
+
+        return role;
+    }
+
     @RequestMapping(value = "/api/auth/refresh", method = RequestMethod.GET)
     public ResponseEntity<?> refreshAuthenticationToken(@RequestHeader(name = "Authorization") String authHeader) throws Exception {
 
@@ -66,7 +90,8 @@ public class JwtAuthController {
         // thus we only need to extract the email and generate new token
 
         if (authHeader == null || authHeader.length() == 0) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            log.info("Refresh endpoint received request without auth header");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Authorization header is not present");
         }
 
         String token = jwtTokenUtil.getTokenFromHeader(authHeader);
@@ -75,7 +100,13 @@ public class JwtAuthController {
         // Generate new token and update it
         String newToken = jwtTokenUtil.generateToken(User.builder().username(username).password("").authorities(Collections.emptySet()).build());
 
-        return ResponseEntity.ok(new JwtResponse(newToken));
+        String role = getRole();
+        if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
+            return ResponseEntity.ok(new JwtResponse(newToken, UserRole.ADMIN));
+        }
+        else {
+            return ResponseEntity.ok(new JwtResponse(newToken, UserRole.USER));
+        }
     }
 
 }
