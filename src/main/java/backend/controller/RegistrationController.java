@@ -44,24 +44,24 @@ public class RegistrationController {
     }
 
 
-        @RequestMapping(value = "/api/auth/registration", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/auth/registration", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody RegistrationRequest registrationRequest) throws Exception {
         if (!isValidMail(registrationRequest.getEmail())) {
             // Return 400 on invalid mail
             log.info("Invalid email received: " + registrationRequest.getEmail());
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Invalid email");
         }
 
         if (!emailAvailable(registrationRequest.getEmail())) {
             // Return 409 on email already used
             log.info("Email already used: " + registrationRequest.getEmail());
-            return new ResponseEntity<>(HttpStatus.CONFLICT);
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Email already used");
         }
 
         if (!passwordStrong(registrationRequest.getPassword())) {
             // Return 406 on low password strength
             log.info("Password not strong enough");
-            return new ResponseEntity<>(HttpStatus.NOT_ACCEPTABLE);
+            return ResponseEntity.status(HttpStatus.NOT_ACCEPTABLE).body("Password not strong enough");
         }
 
         // Create new user
@@ -72,7 +72,7 @@ public class RegistrationController {
         var roleEntity = roleRepository.getRoleByName("USER");
         if (roleEntity.isEmpty()) {
             log.error("Could not find USER role after initialization");
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching role from database");
         }
 
         Set<RoleEntity> roles = new HashSet<>();

@@ -19,13 +19,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
-import org.springframework.web.bind.annotation.RequestBody;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestMethod;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 import springfox.documentation.spi.service.contexts.SecurityContext;
 
 import javax.servlet.ServletContext;
+import java.sql.Time;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -41,21 +39,23 @@ public class PostController {
     @Autowired
     private ServletContext servletContext;
 
-    @RequestMapping(value = "/api/post", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/posts", method = RequestMethod.POST)
     public ResponseEntity<?> createPost(@RequestBody CreatePostRequest createPostRequest) throws Exception {
         String userEmail = (String)servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
         String postText = createPostRequest.getPostText();
 
         // posts cannot be empty
         if (postText.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            log.info("Post text is empty");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Post text is empty");
         }
 
         PostEntity post = PostFactory.createPost(postText, userEmail);
 
         var typeOptional = typeRepository.getTypeByName(Constants.REGULAR_TYPE_NAME);
         if (typeOptional.isEmpty()) {
-           return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error fetching post type from database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching post type from database");
         }
 
         Set<TypeEntity> types = new HashSet<>();
@@ -66,17 +66,28 @@ public class PostController {
         return new ResponseEntity<>(HttpStatus.OK);
     }
 
+    @RequestMapping(value = "/api/posts", method = RequestMethod.GET)
+    public ResponseEntity<?> getPosts(@RequestParam Integer count) throws Exception {
+        // TODO return count of newest posts
+        return null;
+    }
+
     @RequestMapping(value = "/api/posts/new", method = RequestMethod.GET)
-    public ResponseEntity<?> getNewPosts() throws Exception {
+    public ResponseEntity<?> getNewPosts(@RequestParam String timeStamp) throws Exception {
+        Time time = Time.valueOf(timeStamp);
+        // TODO return all posts newer than the timestamp
+
         return null;
     }
 
     @RequestMapping(value = "/api/posts/old", method = RequestMethod.GET)
-    public ResponseEntity<?> getOlderPosts(@RequestBody CreatePostRequest createPostRequest) throws Exception {
+    public ResponseEntity<?> getOlderPosts(@RequestParam String timeStamp, @RequestParam Integer count) throws Exception {
+        // TODO return count of posts older than the timestamp
+
         return null;
     }
 
-    @RequestMapping(value = "/api/announcement", method = RequestMethod.POST)
+    @RequestMapping(value = "/api/announcements", method = RequestMethod.POST)
     public ResponseEntity<?> createAnnouncement(@RequestBody CreatePostRequest createAnnouncementRequest) throws Exception {
         String userEmail = (String)servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
         String postText = createAnnouncementRequest.getPostText();
@@ -85,27 +96,29 @@ public class PostController {
         boolean isAdmin = false;
         for (var sga : authorities) {
             if (sga instanceof SimpleGrantedAuthority) {
-                if (((SimpleGrantedAuthority) sga).getAuthority().equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
+                if (sga.getAuthority().equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
                     isAdmin = true;
                 }
             }
         }
 
         if (!isAdmin) {
-            log.info("Attempted access to announcement endpoint of non-admin user");
-            return new ResponseEntity<>(HttpStatus.UNAUTHORIZED);
+            log.info("Attempt to access announcement endpoint by non-admin user");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Endpoint access restricted to admin role users");
         }
 
         // posts cannot be empty
         if (postText.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+            log.info("Announcement text is empty");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Announcements cannot be empty");
         }
 
         PostEntity post = PostFactory.createPost(postText, userEmail);
 
         var typeOptional = typeRepository.getTypeByName(Constants.ANNOUNCEMENT_TYPE_NAME);
         if (typeOptional.isEmpty()) {
-            return new ResponseEntity<>(HttpStatus.INTERNAL_SERVER_ERROR);
+            log.error("Error fetching post type from database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Error fetching post type from database");
         }
 
         Set<TypeEntity> types = new HashSet<>();
