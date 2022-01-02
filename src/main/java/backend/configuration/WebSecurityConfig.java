@@ -54,7 +54,7 @@ public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
         httpSecurity.csrf().disable()
                 // we don't authenticate requests to authentication (login) endpoint
                 // and the register endpoint
-                .authorizeRequests().antMatchers("/api/auth/authentication", "/api/auth/registration", "/v2/**").permitAll()
+                .authorizeRequests().antMatchers("/api/auth/authentication", "/api/auth/registration", "/api/auth/email/available", "/v3/**").permitAll()
                 // but all other request require auth
                 .anyRequest().authenticated().and()
                 // set the authentication exception handling to our entry point, which returns 401 response
