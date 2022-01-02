@@ -7,6 +7,7 @@ import backend.auth.JwtUserDetailsService;
 
 import backend.auth.responses.UserRole;
 import backend.constants.Constants;
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,19 +24,20 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
 
-@RestController
 @CrossOrigin
+@RestController
 @Slf4j
+@RequiredArgsConstructor
 public class JwtAuthController {
 
     @Autowired
-    private AuthenticationManager authenticationManager;
+    private final AuthenticationManager authenticationManager;
 
     @Autowired
-    private JwtTokenUtil jwtTokenUtil;
+    private final JwtTokenUtil jwtTokenUtil;
 
     @Autowired
-    private JwtUserDetailsService userDetailsService;
+    private final JwtUserDetailsService userDetailsService;
 
     @RequestMapping(value = "/api/auth/authentication", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest) throws Exception {

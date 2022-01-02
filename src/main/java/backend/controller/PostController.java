@@ -20,7 +20,6 @@ import org.springframework.security.core.authority.SimpleGrantedAuthority;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
-import springfox.documentation.spi.service.contexts.SecurityContext;
 
 import javax.servlet.ServletContext;
 import java.sql.Time;
@@ -29,6 +28,7 @@ import java.util.Set;
 
 @RestController
 @Slf4j
+@CrossOrigin
 @RequiredArgsConstructor
 public class PostController {
 
