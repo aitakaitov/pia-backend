@@ -18,8 +18,3 @@ public class JwtResponse implements Serializable {
     private final String jwtToken;
     private final UserRole role;
 }
-
-public enum UserRole {
-    USER,
-    ADMIN
-}

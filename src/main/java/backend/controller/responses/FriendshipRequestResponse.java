@@ -13,7 +13,3 @@ public class FriendshipRequestResponse {
     private FriendshipRequestType type;
 }
 
-public enum FriendshipRequestType {
-    SENT,
-    RECEIVED
-}
