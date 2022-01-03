@@ -35,8 +35,25 @@ public class PostEntity {
     )
     private Set<TypeEntity> types = new HashSet<>();
 
-    /*@ManyToOne
-    @JoinColumn(name = "email")
-    private UserEntity user;
-    */
+    @Override
+    public int hashCode() {
+        return java.util.Objects.hashCode(user_email);
+    }
+
+    @Override
+    public boolean equals(Object o) {
+        if (this == o) {
+            return true;
+        }
+
+        if (o == null) {
+            return false;
+        }
+
+        if (o instanceof PostEntity) {
+            return ((PostEntity) o).getUser_email().equals(user_email);
+        }
+
+        return false;
+    }
 }

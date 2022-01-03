@@ -70,4 +70,27 @@ public class UserEntity {
 			}
 	)
 	private Set<UserEntity> friends = new HashSet<>();
+
+	// Compare by email
+	@Override
+	public int hashCode() {
+		return java.util.Objects.hashCode(email);
+	}
+
+	@Override
+	public boolean equals(Object o) {
+		if (this == o) {
+			return true;
+		}
+
+		if (o == null) {
+			return false;
+		}
+
+		if (o instanceof UserEntity) {
+			return ((UserEntity) o).getEmail().equals(email);
+		}
+
+		return false;
+	}
 }
