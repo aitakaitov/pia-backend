@@ -88,16 +88,16 @@ public class PostController {
         // Same thing happens with friends who can be admins and their posts thus can be announcements
         // but the PostResponse has overriden hashcode and equals, where PostType is not considered
         // so the announcements added later on will replace the ones incorrectly added as regular posts
-        var userPosts = postRepository.getPostsByUserNewest(userEmail);
+        var userPosts = postRepository.getPostsByUser(userEmail);
         var postsToReturn = new HashSet<>(convertPostsToResponses(userPosts, user.get().getName(), PostResponseType.REGULAR));
 
         var friends = user.get().getFriends();
         for (var friend : friends) {
-            postsToReturn.addAll(convertPostsToResponses(postRepository.getPostsByUserNewest(friend.getEmail()),
+            postsToReturn.addAll(convertPostsToResponses(postRepository.getPostsByUser(friend.getEmail()),
                     friend.getName(), PostResponseType.REGULAR));
         }
 
-        var announcements = postRepository.getPostsByTypeNewest(announcementType.get().getId());
+        var announcements = postRepository.getPostsByType(announcementType.get().getId());
 
         for (var announcement : announcements) {
             PostResponse pr = new PostResponse();
