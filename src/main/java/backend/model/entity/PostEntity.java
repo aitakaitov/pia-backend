@@ -3,6 +3,7 @@ package backend.model.entity;
 import lombok.Data;
 
 import javax.persistence.*;
+import java.sql.Timestamp;
 import java.util.*;
 import java.sql.Time;
 
@@ -18,7 +19,7 @@ public class PostEntity {
     private String user_email;
 
     @Column(nullable = false, name = "time_posted")
-    private Time time_posted;
+    private Timestamp time_posted;
 
     @Column(nullable = false, name = "text")
     private String text;
@@ -37,7 +38,7 @@ public class PostEntity {
 
     @Override
     public int hashCode() {
-        return java.util.Objects.hashCode(user_email);
+        return java.util.Objects.hashCode(id);
     }
 
     @Override
@@ -51,7 +52,7 @@ public class PostEntity {
         }
 
         if (o instanceof PostEntity) {
-            return ((PostEntity) o).getUser_email().equals(user_email);
+            return ((PostEntity) o).getId().equals(id);
         }
 
         return false;
