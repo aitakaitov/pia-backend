@@ -17,10 +17,19 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 
+import java.util.HashMap;
+
 @Configuration
 @EnableWebSecurity
 @EnableGlobalMethodSecurity(prePostEnabled = true)
 public class WebSecurityConfig extends WebSecurityConfigurerAdapter {
+
+    private final HashMap<String, String> emailTokenMap = new HashMap<>();
+
+    @Bean(name = "emailTokenMap")
+    public HashMap<String, String> emailTokenMap() {
+        return emailTokenMap;
+    }
 
     @Autowired
     private JwtAuthEntryPoint jwtAuthenticationEntryPoint;

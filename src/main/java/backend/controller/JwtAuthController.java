@@ -23,6 +23,7 @@ import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.Collections;
+import java.util.HashMap;
 
 @CrossOrigin
 @RestController
@@ -30,13 +31,12 @@ import java.util.Collections;
 @RequiredArgsConstructor
 public class JwtAuthController {
 
-    @Autowired
+    private final HashMap<String, String> emailTokenMap;
+
     private final AuthenticationManager authenticationManager;
 
-    @Autowired
     private final JwtTokenUtil jwtTokenUtil;
 
-    @Autowired
     private final JwtUserDetailsService userDetailsService;
 
     @RequestMapping(value = "/api/auth/authentication", method = RequestMethod.POST)
@@ -51,6 +51,8 @@ public class JwtAuthController {
                 .loadUserByUsername(username);
 
         final String token = jwtTokenUtil.generateToken(userDetails);
+
+        emailTokenMap.put(username, token);
 
         String role = getRole();
         if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
@@ -101,6 +103,8 @@ public class JwtAuthController {
 
         // Generate new token and update it
         String newToken = jwtTokenUtil.generateToken(User.builder().username(username).password("").authorities(Collections.emptySet()).build());
+
+        emailTokenMap.put(username, newToken);
 
         String role = getRole();
         if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {

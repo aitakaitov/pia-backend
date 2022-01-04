@@ -19,10 +19,14 @@ import org.springframework.web.filter.OncePerRequestFilter;
 import io.jsonwebtoken.ExpiredJwtException;
 
 import java.io.IOException;
+import java.util.HashMap;
 
 @Component
 @Slf4j
 public class JwtRequestFilter extends OncePerRequestFilter {
+
+    @Autowired
+    private HashMap<String, String> emailTokenMap;
 
     @Autowired
     private JwtUserDetailsService jwtUserDetailsService;
@@ -59,8 +63,9 @@ public class JwtRequestFilter extends OncePerRequestFilter {
         if (username != null && SecurityContextHolder.getContext().getAuthentication() == null) {
             UserDetails userDetails = this.jwtUserDetailsService.loadUserByUsername(username);
 
-            // Validate the token
-            if (jwtTokenUtil.validateToken(jwtToken, userDetails)) {
+            // If the token is valid + is set in the map as the user's current token, authenticate
+            if (jwtTokenUtil.validateToken(jwtToken, userDetails)
+                    && (emailTokenMap.containsKey(username) && emailTokenMap.get(username).equals(jwtToken))) {
 
                 // Set authentication in the context so that we can refer to it later on
                 UsernamePasswordAuthenticationToken usernamePasswordAuthenticationToken = new UsernamePasswordAuthenticationToken(
