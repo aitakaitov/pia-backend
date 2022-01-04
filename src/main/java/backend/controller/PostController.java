@@ -21,6 +21,8 @@ import org.springframework.web.bind.annotation.*;
 
 import javax.servlet.ServletContext;
 import java.sql.Time;
+import java.sql.Timestamp;
+import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -65,10 +67,14 @@ public class PostController {
     }
 
 
-
-
+    /**
+     * For initial posts fetch - to get the most up-to-date state
+     * @param count number of posts
+     * @return count of newest posts
+     * @throws Exception
+     */
     @RequestMapping(value = "/api/posts", method = RequestMethod.GET)
-    public ResponseEntity<?> getPosts(@RequestParam Integer count) throws Exception {
+    public ResponseEntity<?> getPosts(@RequestParam(name = "count") Integer count) throws Exception {
         String userEmail = (String) servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
 
         var user = userRepository.findByEmail(userEmail);
@@ -125,19 +131,124 @@ public class PostController {
         return ResponseEntity.ok(sorted);
     }
 
+    /**
+     * Returns all relevant posts newer than the timestamp
+     * @param timeStamp
+     * @return
+     * @throws Exception
+     */
     @RequestMapping(value = "/api/posts/new", method = RequestMethod.GET)
-    public ResponseEntity<?> getNewPosts(@RequestParam String timeStamp) throws Exception {
-        Time time = Time.valueOf(timeStamp);
-        // TODO return all posts newer than the timestamp
+    public ResponseEntity<?> getNewPosts(@RequestParam(name = "timestamp") Long timeStamp) throws Exception {
+        String userEmail = (String) servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
 
-        return null;
+        var user = userRepository.findByEmail(userEmail);
+        if (user.isEmpty()) {
+            log.error("Could not find calling user in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+        }
+
+        var announcementType = typeRepository.getTypeByName(Constants.ANNOUNCEMENT_TYPE_NAME);
+        if (announcementType.isEmpty()) {
+            log.error("Could not find type in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+        }
+
+        Timestamp t = new Timestamp(timeStamp);
+
+        // We do some fishy stuff here - the user can be an admin and some of his posts can be announcements
+        // so we add all his posts first as regular posts and then we add the announcements
+        // Same thing happens with friends who can be admins and their posts thus can be announcements
+        // but the PostResponse has overriden hashcode and equals, where PostType is not considered
+        // so the announcements added later on will replace the ones incorrectly added as regular posts
+        var userPosts = postRepository.getPostsByUserNewerThan(userEmail, t);
+        var postsToReturn = new HashSet<>(convertPostsToResponses(userPosts, user.get().getName(), PostResponseType.REGULAR));
+
+        var friends = user.get().getFriends();
+        for (var friend : friends) {
+            postsToReturn.addAll(convertPostsToResponses(postRepository.getPostsByUserNewerThan(friend.getEmail(), t),
+                    friend.getName(), PostResponseType.REGULAR));
+        }
+
+        var announcements = postRepository.getPostsByTypeNewerThan(announcementType.get().getId(), t);
+
+        for (var announcement : announcements) {
+            PostResponse pr = new PostResponse();
+            pr.setType(PostResponseType.ANNOUNCEMENT);
+            pr.setText(announcement.getText());
+            pr.setTimePostedMs(announcement.getTime_posted().getTime());
+
+            var postingUser = userRepository.findByEmail(announcement.getUser_email());
+            if (postingUser.isEmpty()){
+                log.error("Could not find user in database");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+            }
+
+            pr.setUserName(postingUser.get().getName());
+            postsToReturn.add(pr);
+        }
+
+        // The response is not guaranteed to be sorted
+        return ResponseEntity.ok(postsToReturn);
     }
 
     @RequestMapping(value = "/api/posts/old", method = RequestMethod.GET)
-    public ResponseEntity<?> getOlderPosts(@RequestParam String timeStamp, @RequestParam Integer count) throws Exception {
-        // TODO return count of posts older than the timestamp
+    public ResponseEntity<?> getOlderPosts(@RequestParam(name = "timestamp") Long timeStamp, @RequestParam(name = "count") Integer count) throws Exception {
+        String userEmail = (String) servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
 
-        return null;
+        var user = userRepository.findByEmail(userEmail);
+        if (user.isEmpty()) {
+            log.error("Could not find calling user in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+        }
+
+        var announcementType = typeRepository.getTypeByName(Constants.ANNOUNCEMENT_TYPE_NAME);
+        if (announcementType.isEmpty()) {
+            log.error("Could not find type in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+        }
+
+        Timestamp t = new Timestamp(timeStamp);
+
+        // We do some fishy stuff here - the user can be an admin and some of his posts can be announcements
+        // so we add all his posts first as regular posts and then we add the announcements
+        // Same thing happens with friends who can be admins and their posts thus can be announcements
+        // but the PostResponse has overriden hashcode and equals, where PostType is not considered
+        // so the announcements added later on will replace the ones incorrectly added as regular posts
+        var userPosts = postRepository.getPostsByUserOlderThan(userEmail, t);
+        var postsToReturn = new HashSet<>(convertPostsToResponses(userPosts, user.get().getName(), PostResponseType.REGULAR));
+
+        var friends = user.get().getFriends();
+        for (var friend : friends) {
+            postsToReturn.addAll(convertPostsToResponses(postRepository.getPostsByUserOlderThan(friend.getEmail(), t),
+                    friend.getName(), PostResponseType.REGULAR));
+        }
+
+        var announcements = postRepository.getPostsByTypeOlderThan(announcementType.get().getId(), t);
+
+        for (var announcement : announcements) {
+            PostResponse pr = new PostResponse();
+            pr.setType(PostResponseType.ANNOUNCEMENT);
+            pr.setText(announcement.getText());
+            pr.setTimePostedMs(announcement.getTime_posted().getTime());
+
+            var postingUser = userRepository.findByEmail(announcement.getUser_email());
+            if (postingUser.isEmpty()){
+                log.error("Could not find user in database");
+                return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
+            }
+
+            pr.setUserName(postingUser.get().getName());
+            postsToReturn.add(pr);
+        }
+
+        // Sort them from newest to oldest and select first count
+        var sorted = postsToReturn.stream()
+                .sorted(new PostResponseTimeComparator().reversed())
+                .limit(count)
+                .collect(Collectors.toSet());
+
+        // The response is not guaranteed to be sorted
+        return ResponseEntity.ok(sorted);
     }
 
 

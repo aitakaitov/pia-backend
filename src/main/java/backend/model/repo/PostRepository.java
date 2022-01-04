@@ -20,15 +20,15 @@ public interface PostRepository extends CrudRepository<PostEntity, UUID> {
     @Query("SELECT p FROM PostEntity p JOIN p.types t WHERE t.id = :type")
     Set<PostEntity> getPostsByType(@Param("type") UUID type);
 
-    @Query("SELECT p FROM PostEntity p WHERE p.user_email = :email AND p.time_posted <= :timestamp")
+    @Query("SELECT p FROM PostEntity p WHERE p.user_email = :email AND p.time_posted < :timestamp")
     Set<PostEntity> getPostsByUserOlderThan(@Param("email") String email, @Param("timestamp") Timestamp timestamp);
 
-    @Query("SELECT p FROM PostEntity p JOIN p.types t WHERE t.id = :type AND p.time_posted <= :timestamp")
+    @Query("SELECT p FROM PostEntity p JOIN p.types t WHERE t.id = :type AND p.time_posted < :timestamp")
     Set<PostEntity> getPostsByTypeOlderThan(@Param("type") UUID type, @Param("timestamp") Timestamp timestamp);
 
-    @Query("SELECT p FROM PostEntity p WHERE p.user_email = :email AND p.time_posted >= :timestamp")
+    @Query("SELECT p FROM PostEntity p WHERE p.user_email = :email AND p.time_posted > :timestamp")
     Set<PostEntity> getPostsByUserNewerThan(@Param("email") String email, @Param("timestamp") Timestamp timestamp);
 
-    @Query("SELECT p FROM PostEntity p JOIN p.types t WHERE t.id = :type AND p.time_posted >= :timestamp")
+    @Query("SELECT p FROM PostEntity p JOIN p.types t WHERE t.id = :type AND p.time_posted > :timestamp")
     Set<PostEntity> getPostsByTypeNewerThan(@Param("type") UUID type, @Param("timestamp") Timestamp timestamp);
 }
