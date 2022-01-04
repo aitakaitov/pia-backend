@@ -5,8 +5,10 @@ import backend.controller.requests.SimpleUserRequest;
 import backend.controller.responses.FriendshipRequestResponse;
 import backend.controller.responses.FriendshipRequestType;
 import backend.controller.responses.SimpleUserResponse;
+import backend.model.entity.RoleEntity;
 import backend.model.entity.UserEntity;
 import backend.model.entity.utils.UserEntityUtils;
+import backend.model.repo.RoleRepository;
 import backend.model.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -25,6 +27,7 @@ import java.util.*;
 public class UserController {
 
     final UserRepository userRepository;
+    final RoleRepository roleRepository;
 
     @Autowired
     private ServletContext servletContext;
@@ -376,6 +379,125 @@ public class UserController {
         clientUser.get().getBlocked().remove(userToUnblock.get());
         userRepository.save(clientUser.get());
         return ResponseEntity.ok().body("");
+    }
+
+    @RequestMapping(value = "/api/users/admin", method = RequestMethod.POST)
+    public ResponseEntity<?> grantAdmin(@RequestBody SimpleUserRequest grantAdminRequest) throws Exception {
+        String userEmail = (String) servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
+
+        // Find both users - the one to unblock and the client
+        var userToAdmin = userRepository.findByEmail(grantAdminRequest.getEmail());
+        if (userToAdmin.isEmpty()) {
+            log.info("Request to block a non-existent user");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User does not exist");
+        }
+
+        var clientUser = userRepository.findByEmail(userEmail);
+        if (clientUser.isEmpty()) {
+            log.error("Could not find calling user in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error on server side");
+        }
+
+        // Check if the client is admin
+        var adminRole = roleRepository.getRoleByName(Constants.ADMIN_ROLE_NAME);
+        if (adminRole.isEmpty()) {
+            log.error("Could not find admin role in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error on server side");
+        }
+
+        if (!clientUser.get().getRoles().contains(adminRole.get())) {
+            log.info("Attempt to access /users/admin endpoint without admin role");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Admin role required");
+        }
+
+        // client and target same
+        if (userToAdmin.equals(clientUser)) {
+            log.info("Cannot admin oneself");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cannot grant admin to oneself");
+        }
+
+
+        // Check if the user is friend with the target
+        if (!UserEntityUtils.areFriends(clientUser.get(), userToAdmin.get())) {
+            log.info("Attempted to admin non-friend");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Target user must be a friend");
+        }
+
+        // Check if the target is not an admin already
+        if (userToAdmin.get().getRoles().contains(adminRole.get())) {
+            log.info("User already admin");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User is already admin");
+        }
+
+        // Admin the user
+        var set = new HashSet<RoleEntity>();
+        set.add(adminRole.get());
+        userToAdmin.get().setRoles(set);
+        userRepository.save(userToAdmin.get());
+
+        return ResponseEntity.ok("");
+    }
+
+    @RequestMapping(value = "/api/users/admin", method = RequestMethod.DELETE)
+    public ResponseEntity<?> removeAdmin(@RequestParam(name = "email") String targetEmail) throws Exception {
+        String userEmail = (String) servletContext.getAttribute(Constants.SCONTEXT_USER_EMAIL_KEY);
+
+        // Find both users - the one to unblock and the client
+        var userToRemoveAdmin = userRepository.findByEmail(targetEmail);
+        if (userToRemoveAdmin.isEmpty()) {
+            log.info("Request to block a non-existent user");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User does not exist");
+        }
+
+        var clientUser = userRepository.findByEmail(userEmail);
+        if (clientUser.isEmpty()) {
+            log.error("Could not find calling user in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error on server side");
+        }
+
+        // Check if the client is admin
+        var adminRole = roleRepository.getRoleByName(Constants.ADMIN_ROLE_NAME);
+        if (adminRole.isEmpty()) {
+            log.error("Could not find admin role in database");
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Database error on server side");
+        }
+
+        if (!clientUser.get().getRoles().contains(adminRole.get())) {
+            log.info("Attempt to access /users/admin endpoint without admin role");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Admin role required");
+        }
+
+        // client and target same
+        if (userToRemoveAdmin.equals(clientUser)) {
+            log.info("Cannot un-admin oneself");
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Cannot remove admin from oneself");
+        }
+
+        // Check if the user is friend with the target
+        if (!UserEntityUtils.areFriends(clientUser.get(), userToRemoveAdmin.get())) {
+            log.info("Attempted to remove admin from non-friend");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Target user must be a friend");
+        }
+
+        // Check if the target is an admin
+        if (!userToRemoveAdmin.get().getRoles().contains(adminRole.get())) {
+            log.info("User not admin");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("User is not admin");
+        }
+
+        var userRole = roleRepository.getRoleByName(Constants.USER_ROLE_NAME);
+        if (userRole.isEmpty()) {
+            log.info("Could not find user role in database");
+            return ResponseEntity.status(HttpStatus.CONFLICT).body("Server-side database error");
+        }
+
+        // Un-admin the user
+        var set = new HashSet<RoleEntity>();
+        set.add(userRole.get());
+        userToRemoveAdmin.get().setRoles(set);
+        userRepository.save(userToRemoveAdmin.get());
+
+        return ResponseEntity.ok("");
     }
 
     /**

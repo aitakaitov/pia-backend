@@ -10,4 +10,8 @@ public class UserEntityUtils {
     public static boolean hasRequested(UserEntity source, UserEntity target) {
         return source.getRequests().contains(target);
     }
+
+    public static boolean areFriends(UserEntity user1, UserEntity user2) {
+        return user1.getFriends().contains(user2);
+    }
 }
