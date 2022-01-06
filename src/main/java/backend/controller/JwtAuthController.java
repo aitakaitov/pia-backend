@@ -7,6 +7,8 @@ import backend.auth.JwtUserDetailsService;
 
 import backend.auth.responses.UserRole;
 import backend.constants.Constants;
+import backend.model.repo.RoleRepository;
+import backend.model.repo.UserRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -39,6 +41,10 @@ public class JwtAuthController {
 
     private final JwtUserDetailsService userDetailsService;
 
+    private final RoleRepository roleRepository;
+
+    private final UserRepository userRepository;
+
     @RequestMapping(value = "/api/auth/authentication", method = RequestMethod.POST)
     public ResponseEntity<?> createAuthenticationToken(@RequestBody JwtRequest authenticationRequest) throws Exception {
 
@@ -54,8 +60,8 @@ public class JwtAuthController {
 
         emailTokenMap.put(username, token);
 
-        String role = getRole();
-        if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
+        String role = getRole(username);
+        if (role.equals(Constants.ADMIN_ROLE_NAME)) {
             return ResponseEntity.ok(new JwtResponse(token, UserRole.ADMIN));
         }
         else {
@@ -73,18 +79,23 @@ public class JwtAuthController {
         }
     }
 
-    private String getRole() {
-        // This is a bit weird, but we know only one authority is granted to a user right now
-        // and that it is a SimpleGrantedAuthority, so we can do this. If there were more authorities, we would have to
-        // do it another way
-        String role = "";
-        for (var sga : SecurityContextHolder.getContext().getAuthentication().getAuthorities()) {
-            if (sga instanceof SimpleGrantedAuthority) {
-                role = sga.getAuthority();
+    private String getRole(String email) {
+        var user = userRepository.findByEmail(email);
+        if (user.isEmpty()) {
+            return null;
+        }
+
+        var roleAdmin = roleRepository.getRoleByName(Constants.ADMIN_ROLE_NAME);
+
+        if (roleAdmin.isPresent()) {
+            if (user.get().getRoles().contains(roleAdmin.get())){
+                return Constants.ADMIN_ROLE_NAME;
+            } else {
+                return Constants.USER_ROLE_NAME;
             }
         }
 
-        return role;
+        return null;
     }
 
     @RequestMapping(value = "/api/auth/refresh", method = RequestMethod.GET)
@@ -106,7 +117,7 @@ public class JwtAuthController {
 
         emailTokenMap.put(username, newToken);
 
-        String role = getRole();
+        String role = getRole(username);
         if (role.equals("ROLE_" + Constants.ADMIN_ROLE_NAME)) {
             return ResponseEntity.ok(new JwtResponse(newToken, UserRole.ADMIN));
         }
