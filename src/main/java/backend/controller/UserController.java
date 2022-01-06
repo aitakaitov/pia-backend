@@ -20,9 +20,9 @@ import org.springframework.web.bind.annotation.*;
 import javax.servlet.ServletContext;
 import java.util.*;
 
+@CrossOrigin
 @RestController
 @Slf4j
-@CrossOrigin
 @RequiredArgsConstructor
 public class UserController {
 

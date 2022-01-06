@@ -26,9 +26,9 @@ import java.time.LocalDateTime;
 import java.util.*;
 import java.util.stream.Collectors;
 
+@CrossOrigin
 @RestController
 @Slf4j
-@CrossOrigin
 @RequiredArgsConstructor
 public class PostController {
 
@@ -153,7 +153,8 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
         }
 
-        Timestamp t = new Timestamp(timeStamp);
+        // TODO +1 because > acts like >= for some reason
+        Timestamp t = new Timestamp(timeStamp + 1);
 
         // We do some fishy stuff here - the user can be an admin and some of his posts can be announcements
         // so we add all his posts first as regular posts and then we add the announcements
@@ -207,7 +208,8 @@ public class PostController {
             return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).body("Server-side database error");
         }
 
-        Timestamp t = new Timestamp(timeStamp);
+        // TODO because < acts like <= for some reason
+        Timestamp t = new Timestamp(timeStamp - 1);
 
         // We do some fishy stuff here - the user can be an admin and some of his posts can be announcements
         // so we add all his posts first as regular posts and then we add the announcements

@@ -16,9 +16,9 @@ import org.springframework.web.bind.annotation.*;
 import java.util.*;
 import java.util.regex.Pattern;
 
+@CrossOrigin
 @RestController
 @Slf4j
-@CrossOrigin
 @RequiredArgsConstructor
 public class RegistrationController {
 
